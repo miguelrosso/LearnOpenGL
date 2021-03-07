@@ -241,7 +241,8 @@ int main() {
 	ourShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
 	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-	ourShader.setVec3("light.position", 1.2f, 1.0f, 2.0f);
+	//ourShader.setVec3("light.position", 1.2f, 1.0f, 2.0f);
+	ourShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
 
 	lightShader.use();
 	lightShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
@@ -285,11 +286,11 @@ int main() {
 		glBindTexture(GL_TEXTURE_2D, texture1);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, texture3);
+		//glActiveTexture(GL_TEXTURE2);
+		//glBindTexture(GL_TEXTURE_2D, texture3);
 
 		glBindVertexArray(VAO);
-		for (unsigned int i = 0; i < 1; i++) {
+		for (unsigned int i = 0; i < 10; i++) {
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::translate(model, cubePositions[i]);
 			float angle = 20.0f * i;
@@ -313,6 +314,8 @@ int main() {
 
 		glfwPollEvents();
 		glfwSwapBuffers(window);
+
+		std::cout << glGetError() << std::endl;
 	}
 
 	glDeleteVertexArrays(1, &VAO);
