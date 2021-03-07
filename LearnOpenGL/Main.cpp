@@ -156,6 +156,12 @@ int main() {
 		glm::vec3(1.5f,  0.2f, -1.5f),
 		glm::vec3(-1.3f,  1.0f, -1.5f) 
 	};
+	glm::vec3 pointLightPositions[] = {
+		glm::vec3(0.7f,  0.2f,  2.0f),
+		glm::vec3(2.3f, -3.3f, -4.0f),
+		glm::vec3(-4.0f,  2.0f, -12.0f),
+		glm::vec3(0.0f,  0.0f, -3.0f) 
+	};
 
 	unsigned int VBO, VAO;
 	glGenBuffers(1, &VBO);
@@ -236,13 +242,6 @@ int main() {
 	ourShader.setInt("material.specular", 1);
 	ourShader.setInt("material.emissive", 2);
 	ourShader.setFloat("material.shininess", 64.0f);
-	ourShader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
-	ourShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
-	ourShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-
-	ourShader.setFloat("light.constant", 1.0f);
-	ourShader.setFloat("light.linear", 0.09f);
-	ourShader.setFloat("light.quadratic", 0.032f);
 
 	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 	ourShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
@@ -282,8 +281,35 @@ int main() {
 		view = camera.GetViewMatrix();
 		projection = glm::perspective(glm::radians(camera.Zoom), 800.0f / 600.0f, 0.1f, 100.0f);
 		
-		ourShader.setVec3("light.position", camera.Position);
-		ourShader.setVec3("light.direction", camera.Front);
+		//Directional Light
+		ourShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+		ourShader.setVec3("dirLight.ambient", 0.01f, 0.01f, 0.01f);
+		ourShader.setVec3("dirLight.diffuse", 0.3f, 0.3f, 0.3f);
+		ourShader.setVec3("dirLight.specular", 0.1f, 0.1f, 0.1f);
+
+		//Point Lights
+		for (unsigned int i = 0; i < 4; i++) {
+			const std::string pointLight = "pointLights[" + std::to_string(i) + "]";
+			ourShader.setVec3(pointLight + ".position", pointLightPositions[i]);
+			ourShader.setVec3(pointLight + ".ambient", glm::vec3(0.00f * i));
+			ourShader.setVec3(pointLight + ".diffuse", glm::vec3(0.4f));
+			ourShader.setVec3(pointLight + ".specular", glm::vec3(1.0f));
+			ourShader.setFloat(pointLight + ".constant", 1.0f);
+			ourShader.setFloat(pointLight + ".linear", 0.09f);
+			ourShader.setFloat(pointLight + ".quadratic", 0.032f);
+		}
+
+		//Spot Light
+		ourShader.setVec3("spotLight.position", camera.Position);
+		ourShader.setVec3("spotLight.direction", camera.Front);
+		ourShader.setVec3("spotLight.ambient", glm::vec3(0.0f));
+		ourShader.setVec3("spotLight.diffuse", glm::vec3(0.5f));
+		ourShader.setVec3("spotLight.specular", glm::vec3(0.5f));
+		ourShader.setFloat("spotLight.constant", 1.0f);
+		ourShader.setFloat("spotLight.linear", 0.09f);
+		ourShader.setFloat("spotLight.quadratic", 0.032f);
+		ourShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+		ourShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
 		ourShader.setVec3("viewPos", camera.Position.x, camera.Position.y, camera.Position.z);
 		ourShader.setMat4("view", view);
@@ -312,11 +338,14 @@ int main() {
 		lightShader.setMat4("view", view);
 		lightShader.setMat4("projection", projection);
 		glBindVertexArray(lightVAO);
+		for (unsigned int i = 0; i < 4; i++) 
+		{
 			glm::mat4 lightModel = glm::mat4(1.0f);
-			lightModel = glm::translate(lightModel, lightPos);
+			lightModel = glm::translate(lightModel, pointLightPositions[i]);
 			lightModel = glm::scale(lightModel, glm::vec3(0.2f));
 			lightShader.setMat4("model", lightModel);
 			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 		glBindVertexArray(0);
 
 		glfwPollEvents();
