@@ -240,9 +240,13 @@ int main() {
 	ourShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
 	ourShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
+	ourShader.setFloat("light.constant", 1.0f);
+	ourShader.setFloat("light.linear", 0.09f);
+	ourShader.setFloat("light.quadratic", 0.032f);
+
 	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-	//ourShader.setVec3("light.position", 1.2f, 1.0f, 2.0f);
-	ourShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+	ourShader.setVec3("light.position", 1.2f, 1.0f, 2.0f);
+	//ourShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
 
 	lightShader.use();
 	lightShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
