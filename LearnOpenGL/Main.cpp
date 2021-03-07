@@ -220,13 +220,17 @@ int main() {
 	std::cout << "Max nr of vertex attributes supported: " << nrAttrib << std::endl;
 
 	ourShader.use();
-	//ourShader.setInt("texture1", 0);
-	//ourShader.setInt("texture2", 1);
-	ourShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-	ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+	ourShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+	ourShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+	ourShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+	ourShader.setFloat("material.shininess", 32.0f);
 
 	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-	ourShader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
+	ourShader.setVec3("light.position", 1.2f, 1.0f, 2.0f);
+	ourShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+	ourShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+	ourShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+	lightShader.setVec3("lightColor", 0.5f, 0.5f, 0.5f);
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -254,7 +258,16 @@ int main() {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		glm::vec3 lightColor;
+		lightColor.x = sin(glfwGetTime() * 2.0f) * 0.5f + 0.5f;
+		lightColor.y = sin(glfwGetTime() * 0.7f) * 0.5f + 0.5f;
+		lightColor.z = sin(glfwGetTime() * 1.3f) * 0.5f + 0.5f;
+		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
+		glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f);
+
 		ourShader.use();
+		ourShader.setVec3("light.ambient", ambientColor);
+		ourShader.setVec3("light.diffuse", diffuseColor);
 
 		view = camera.GetViewMatrix();
 		projection = glm::perspective(glm::radians(camera.Zoom), 800.0f / 600.0f, 0.1f, 100.0f);
@@ -263,7 +276,6 @@ int main() {
 		ourShader.setMat4("view", view);
 		ourShader.setMat4("projection", projection);
 
-		//Rendering cubes
 		//glActiveTexture(GL_TEXTURE0);
 		//glBindTexture(GL_TEXTURE_2D, texture1);
 		//glActiveTexture(GL_TEXTURE1);
@@ -276,13 +288,13 @@ int main() {
 			float angle = 20.0f * i;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			ourShader.setMat4("model", model);
-
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 		glBindVertexArray(0);
 
 		//Rendering Light Source
 		lightShader.use();
+		lightShader.setVec3("lightColor", diffuseColor);
 		lightShader.setMat4("view", view);
 		lightShader.setMat4("projection", projection);
 		glBindVertexArray(lightVAO);
@@ -297,6 +309,10 @@ int main() {
 		glfwSwapBuffers(window);
 	}
 
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteVertexArrays(1, &lightVAO);
+	glDeleteBuffers(1, &VBO);
+	
 	glfwTerminate();
 	return 0;
 }
