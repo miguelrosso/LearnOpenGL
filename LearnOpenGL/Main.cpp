@@ -236,7 +236,7 @@ int main() {
 	ourShader.setInt("material.specular", 1);
 	ourShader.setInt("material.emissive", 2);
 	ourShader.setFloat("material.shininess", 64.0f);
-	ourShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+	ourShader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
 	ourShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
 	ourShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
@@ -245,8 +245,8 @@ int main() {
 	ourShader.setFloat("light.quadratic", 0.032f);
 
 	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-	ourShader.setVec3("light.position", 1.2f, 1.0f, 2.0f);
-	//ourShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+	ourShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
+	ourShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
 
 	lightShader.use();
 	lightShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
@@ -281,6 +281,9 @@ int main() {
 
 		view = camera.GetViewMatrix();
 		projection = glm::perspective(glm::radians(camera.Zoom), 800.0f / 600.0f, 0.1f, 100.0f);
+		
+		ourShader.setVec3("light.position", camera.Position);
+		ourShader.setVec3("light.direction", camera.Front);
 
 		ourShader.setVec3("viewPos", camera.Position.x, camera.Position.y, camera.Position.z);
 		ourShader.setMat4("view", view);
