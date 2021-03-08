@@ -8,15 +8,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
+#define STB_IMAGE_IMPLEMENTATION
 #include "libraries/stb_image/stb_image.h"
 
-#include "Camera.h"
-#include "Shader.h"
-#include "Model.h"
+#include "Camera.h";
+#include "Shader.h";
 
 Camera* mainCamera;
 float deltaTime, lastFrame;
@@ -178,7 +174,7 @@ int main() {
 	stbi_set_flip_vertically_on_load(true);
 
 	std::string path = std::filesystem::absolute("./assets/backpack/backpack.obj").string();
-	std::cout << "About to load file " << path << std::endl;
+	//std::cout << "About to load file " << path << std::endl;
 	//Backpack model
 	//Model backpackModel(path.c_str());
 
@@ -227,6 +223,7 @@ int main() {
 	projection = glm::perspective(glm::radians(camera.Zoom), 800.0f / 600.0f, 0.1f, 100.0f);
 
 	deltaTime = lastFrame = glfwGetTime();
+
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -301,6 +298,8 @@ int main() {
 
 		std::cout << glGetError() << std::endl;
 	}
+
+	std::cout << glGetError() << std::endl;
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteVertexArrays(1, &lightVAO);
