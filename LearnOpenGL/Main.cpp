@@ -1,4 +1,6 @@
 #include <iostream>
+#include <filesystem>
+
 #include <glad/glad.h>
 #include <glfw3.h>
 
@@ -10,11 +12,11 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#define STB_IMAGE_IMPLEMENTATION
 #include "libraries/stb_image/stb_image.h"
 
 #include "Camera.h"
 #include "Shader.h"
+#include "Model.h"
 
 Camera* mainCamera;
 float deltaTime, lastFrame;
@@ -88,6 +90,8 @@ int main() {
 		std::cout << "Failed to Initialize GLAD" << std::endl;
 		return -1;
 	}
+
+	std::cout << "OGL context ready" << std::endl;
 
 	glViewport(0, 0, 800, 600);
 
@@ -169,25 +173,14 @@ int main() {
 
 	unsigned int VBO, VAO;
 	glGenBuffers(1, &VBO);
-	glGenVertexArrays(1, &VAO);
 
-	//Vertex Array Objects contain state for:
-	glBindVertexArray(VAO);
-		//- Vertex Buffer Objects
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	//Image Loading
+	stbi_set_flip_vertically_on_load(true);
 
-		//- Attribs & Uniforms
-		//Position Attrib
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
-		//Normal Attrib
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-		glEnableVertexAttribArray(1);
-		//TexCoord Attrib
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-		glEnableVertexAttribArray(2);
-	glBindVertexArray(0);
+	std::string path = std::filesystem::absolute("./assets/backpack/backpack.obj").string();
+	std::cout << "About to load file " << path << std::endl;
+	//Backpack model
+	//Model backpackModel(path.c_str());
 
 	//Ligth mesh
 	unsigned int lightVAO;
@@ -197,40 +190,6 @@ int main() {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
-
-	//Image Loading
-	stbi_set_flip_vertically_on_load(true);
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load("./assets/container2.png", &width, &height, &nrChannels, 0);
-	if (!data)
-	{
-		std::cout << "Failed to load texture" << std::endl;
-		glfwTerminate();
-		return -1;
-	}
-
-	unsigned int texture1;
-	glGenTextures(1, &texture1);
-	glBindTexture(GL_TEXTURE_2D, texture1);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	stbi_image_free(data);
-
-	data = stbi_load("./assets/container2_specular.png", &width, &height, &nrChannels, 0);
-	unsigned int texture2;
-	glGenTextures(1, &texture2);
-	glBindTexture(GL_TEXTURE_2D, texture2);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	stbi_image_free(data);
-
-	data = stbi_load("./assets/matrix.jpg", &width, &height, &nrChannels, 0);
-	unsigned int texture3;
-	glGenTextures(1, &texture3);
-	glBindTexture(GL_TEXTURE_2D, texture3);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	stbi_image_free(data);
 
 	//Draw as wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -318,24 +277,9 @@ int main() {
 		ourShader.setVec3("viewPos", camera.Position.x, camera.Position.y, camera.Position.z);
 		ourShader.setMat4("view", view);
 		ourShader.setMat4("projection", projection);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture1);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, texture2);
-		//glActiveTexture(GL_TEXTURE2);
-		//glBindTexture(GL_TEXTURE_2D, texture3);
-
-		glBindVertexArray(VAO);
-		for (unsigned int i = 0; i < 10; i++) {
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, cubePositions[i]);
-			float angle = 20.0f * i;
-			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			ourShader.setMat4("model", model);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
-		glBindVertexArray(0);
+		
+		//Render loaded mesh
+		//backpackModel.Draw(ourShader);
 
 		//Rendering Light Source
 		lightShader.use();
