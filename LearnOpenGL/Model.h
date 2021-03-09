@@ -34,7 +34,7 @@ private:
 	{
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path,
-			aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
+			aiProcess_Triangulate | aiProcess_GenNormals);
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
@@ -42,7 +42,7 @@ private:
 			return;
 		}
 
-		directory = path.substr(0, path.find_last_of(std::filesystem::path::preferred_separator));
+		directory = path.substr(0, path.find_last_of('\\'));
 		processNode(scene->mRootNode, scene);
 	};
 
@@ -112,6 +112,7 @@ private:
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 		}
 		
+		std::cout << "Created mesh with " << vertices.size() << " vertices, " << indices.size() << " indices and " << textures.size() << " textures" << std::endl;
 		return Mesh(vertices, indices, textures);
 	};
 
@@ -147,7 +148,7 @@ private:
 	unsigned int TextureFromFile(const char* path, std::string& directory)
 	{
 		std::string filename = std::string(path);
-		filename = directory + std::filesystem::path::preferred_separator + filename;
+		filename = directory + '\\' + filename;
 
 		unsigned int textureID;
 		glGenTextures(1, &textureID);
@@ -170,8 +171,8 @@ private:
 
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 			stbi_image_free(data);
 		}
