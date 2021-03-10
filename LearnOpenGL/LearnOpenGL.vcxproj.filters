@@ -42,5 +42,6 @@
   <ItemGroup>
     <None Include="shaders\depth_testing.vert" />
     <None Include="shaders\depth_testing.frag" />
+    <None Include="shaders\stencil_buffer_singlecolor.frag" />
   </ItemGroup>
 </Project>
