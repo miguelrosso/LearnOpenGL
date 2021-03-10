@@ -156,6 +156,10 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="Shader.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\depth_testing.frag" />
+    <None Include="shaders\depth_testing.vert" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

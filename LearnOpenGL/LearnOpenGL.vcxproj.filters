@@ -39,4 +39,8 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\depth_testing.vert" />
+    <None Include="shaders\depth_testing.frag" />
+  </ItemGroup>
 </Project>
