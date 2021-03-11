@@ -44,5 +44,6 @@
     <None Include="shaders\depth_testing.frag" />
     <None Include="shaders\stencil_buffer_singlecolor.frag" />
     <None Include="shaders\blending_cutout.frag" />
+    <None Include="shaders\blending_alpha.frag" />
   </ItemGroup>
 </Project>
