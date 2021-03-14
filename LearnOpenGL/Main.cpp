@@ -22,9 +22,16 @@ unsigned int loadTexture(const char* path, int wrap = GL_REPEAT);
 unsigned int loadCubemap(std::vector<std::string> faces, int filter = GL_LINEAR);
 void DrawTwoContainers(unsigned int cubeVAO, unsigned int cubeTexture, glm::mat4 model, Shader& shader, float scale = 1.0f);
 
+unsigned int framebuffer, texColorBuffer, rbo = -1;
+
 // settings
 unsigned int SCR_WIDTH = 800;
 unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_INITIAL_W = 800;
+const unsigned int SCR_INITIAL_H = 600;
+unsigned int FRAMEBUFFER_W = SCR_INITIAL_W;
+unsigned int FRAMEBUFFER_H = SCR_INITIAL_H;
+bool FIXED_FRAMEBUFFER_SIZE = false;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -44,6 +51,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -95,6 +103,7 @@ int main()
     Shader windowShader("./shaders/depth_testing.vert", "./shaders/blending_alpha.frag");
     Shader screenShader("./shaders/framebuffer_quad.vert", "./shaders/framebuffer_quad.frag");
     Shader skyboxShader("./shaders/cubemap/cubemap.vert", "./shaders/cubemap/cubemap.frag");
+    Shader reflectiveShader("./shaders/cubemap/cubemap_reflection.vert", "./shaders/cubemap/cubemap_reflection.frag");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -261,14 +270,12 @@ int main()
     // glBindRenderbuffer(GL_RENDERBUFFER, RBO);
     // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
 
-    unsigned int framebuffer;
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
-    unsigned int texColorBuffer;
     glGenTextures(1, &texColorBuffer);
     glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FRAMEBUFFER_W, FRAMEBUFFER_H, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -276,10 +283,9 @@ int main()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    unsigned int rbo;
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, FRAMEBUFFER_W, FRAMEBUFFER_H);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
@@ -374,6 +380,62 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glBindVertexArray(0);
 
+    // Cubemap reflection
+    float reflectiveCubeVertices[] = {
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+    };
+    unsigned int reflectiveCubeVAO, reflectiveCubeVBO;
+    glGenVertexArrays(1, &reflectiveCubeVAO);
+    glGenBuffers(1, &reflectiveCubeVBO);
+    glBindVertexArray(reflectiveCubeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, reflectiveCubeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(reflectiveCubeVertices), &reflectiveCubeVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+
     // shader configuration
     // --------------------
     shader.use();
@@ -406,6 +468,10 @@ int main()
 		shaderSingleColor.use();
 		shaderSingleColor.setMat4("view", view);
 		shaderSingleColor.setMat4("projection", projection);
+        reflectiveShader.use();
+		reflectiveShader.setMat4("view", view);
+		reflectiveShader.setMat4("projection", projection);
+        reflectiveShader.setVec3("cameraPos", camera.Position);
 		shader.use();
 		shader.setMat4("view", view);
 		shader.setMat4("projection", projection);
@@ -426,6 +492,14 @@ int main()
 		glStencilMask(0xFF);
 		// cubes
 		DrawTwoContainers(cubeVAO, cubeTexture, model, shader, 1.0f);
+
+        glDisable(GL_CULL_FACE);
+        reflectiveShader.use();
+        reflectiveShader.setMat4("model", glm::mat4(1.0f));
+        glBindVertexArray(reflectiveCubeVAO);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glEnable(GL_CULL_FACE);
 
 		//second pass: Draw objects with singleColor shader, writing only when
 		//stencil mask is notequal
@@ -494,8 +568,9 @@ int main()
 
         // render
         // ------
-        glViewport(0, 0, 800, 600);
+        glViewport(0, 0, FRAMEBUFFER_W, FRAMEBUFFER_H);
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        //glViewport(0, 0, 800, 600);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
@@ -519,11 +594,14 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
 
+        //std::cout << SCR_WIDTH << " " << SCR_HEIGHT << std::endl;
         //std::cout << glGetError() << std::endl;
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
+    glDeleteVertexArrays(1, &skyboxVAO);
+    glDeleteBuffers(1, &skyboxVBO);
     glDeleteFramebuffers(1, &framebuffer);
     glDeleteVertexArrays(1, &fbQuadVAO);
     glDeleteVertexArrays(1, &cubeVAO);
@@ -572,11 +650,43 @@ void processInput(GLFWwindow* window)
 // ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+    if (width == 0 || height == 0) return;
+
     SCR_WIDTH  = width;
     SCR_HEIGHT = height;
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
+
+    if (!FIXED_FRAMEBUFFER_SIZE && framebuffer != -1) {
+        FRAMEBUFFER_W = SCR_WIDTH;
+        FRAMEBUFFER_H = SCR_HEIGHT;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+        glDeleteTextures(1, &texColorBuffer);
+		glGenTextures(1, &texColorBuffer);
+		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+        glDeleteRenderbuffers(1, &rbo);
+        glGenRenderbuffers(1, &rbo);
+		glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			std::cout << "Framebuffer is not complete!" << std::endl;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 }
 
 // glfw: whenever the mouse moves, this callback is called
