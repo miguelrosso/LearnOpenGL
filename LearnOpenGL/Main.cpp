@@ -436,6 +436,8 @@ int main()
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
 
+    Model tvModel(".\\assets\\backpack\\TV.obj");
+
     // shader configuration
     // --------------------
     shader.use();
@@ -493,13 +495,12 @@ int main()
 		// cubes
 		DrawTwoContainers(cubeVAO, cubeTexture, model, shader, 1.0f);
 
-        glDisable(GL_CULL_FACE);
         reflectiveShader.use();
-        reflectiveShader.setMat4("model", glm::mat4(1.0f));
-        glBindVertexArray(reflectiveCubeVAO);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glEnable(GL_CULL_FACE);
+        glm::mat4 tvModelTransform = glm::mat4(1.0f);
+        tvModelTransform = glm::rotate(tvModelTransform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        tvModelTransform = glm::scale(tvModelTransform, glm::vec3(0.25f));
+        reflectiveShader.setMat4("model", tvModelTransform);
+        tvModel.Draw(reflectiveShader);
 
 		//second pass: Draw objects with singleColor shader, writing only when
 		//stencil mask is notequal
@@ -595,7 +596,7 @@ int main()
         glfwPollEvents();
 
         //std::cout << SCR_WIDTH << " " << SCR_HEIGHT << std::endl;
-        //std::cout << glGetError() << std::endl;
+        std::cout << glGetError() << std::endl;
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
