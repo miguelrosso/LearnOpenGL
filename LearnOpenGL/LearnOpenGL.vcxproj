@@ -163,6 +163,8 @@
     <None Include="shaders\depth_testing.vert" />
     <None Include="shaders\framebuffer_quad.frag" />
     <None Include="shaders\framebuffer_quad.vert" />
+    <None Include="shaders\postprocessing\pp_inversion.frag" />
+    <None Include="shaders\postprocessing\pp_kernel.frag" />
     <None Include="shaders\stencil_buffer_singlecolor.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -92,7 +92,7 @@ int main()
     Shader shaderSingleColor("./shaders/depth_testing.vert", "./shaders/stencil_buffer_singlecolor.frag");
     Shader grassShader("./shaders/depth_testing.vert", "./shaders/blending_cutout.frag");
     Shader windowShader("./shaders/depth_testing.vert", "./shaders/blending_alpha.frag");
-    Shader screenShader("./shaders/framebuffer_quad.vert", "./shaders/framebuffer_quad.frag");
+    Shader screenShader("./shaders/framebuffer_quad.vert", "./shaders/postprocessing/pp_edge.frag");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -269,9 +269,10 @@ int main()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
-    std::cout << glGetError() << std::endl;
 
     unsigned int rbo;
     glGenRenderbuffers(1, &rbo);
@@ -410,8 +411,6 @@ int main()
         // render
         // ------
         glViewport(0, 0, 800, 600);
-        std::cout << "SCR_W: " << SCR_WIDTH << " SRC_H: " << SCR_HEIGHT << std::endl;
-
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
