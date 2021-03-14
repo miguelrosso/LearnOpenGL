@@ -159,6 +159,8 @@
   <ItemGroup>
     <None Include="shaders\blending_alpha.frag" />
     <None Include="shaders\blending_cutout.frag" />
+    <None Include="shaders\cubemap\cubemap.frag" />
+    <None Include="shaders\cubemap\cubemap.vert" />
     <None Include="shaders\depth_testing.frag" />
     <None Include="shaders\depth_testing.vert" />
     <None Include="shaders\framebuffer_quad.frag" />

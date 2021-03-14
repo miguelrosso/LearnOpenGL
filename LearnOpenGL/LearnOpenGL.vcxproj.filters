@@ -49,5 +49,7 @@
     <None Include="shaders\framebuffer_quad.frag" />
     <None Include="shaders\postprocessing\pp_inversion.frag" />
     <None Include="shaders\postprocessing\pp_kernel.frag" />
+    <None Include="shaders\cubemap\cubemap.vert" />
+    <None Include="shaders\cubemap\cubemap.frag" />
   </ItemGroup>
 </Project>
