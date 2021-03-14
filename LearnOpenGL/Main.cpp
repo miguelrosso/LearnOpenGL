@@ -22,8 +22,8 @@ unsigned int loadTexture(const char* path, int wrap = GL_REPEAT);
 void DrawTwoContainers(unsigned int cubeVAO, unsigned int cubeTexture, glm::mat4 model, Shader& shader, float scale = 1.0f);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+unsigned int SCR_WIDTH = 800;
+unsigned int SCR_HEIGHT = 600;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -92,6 +92,7 @@ int main()
     Shader shaderSingleColor("./shaders/depth_testing.vert", "./shaders/stencil_buffer_singlecolor.frag");
     Shader grassShader("./shaders/depth_testing.vert", "./shaders/blending_cutout.frag");
     Shader windowShader("./shaders/depth_testing.vert", "./shaders/blending_alpha.frag");
+    Shader screenShader("./shaders/framebuffer_quad.vert", "./shaders/framebuffer_quad.frag");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -225,6 +226,86 @@ int main()
     unsigned int grassTexture = loadTexture(std::filesystem::absolute("assets/textures/grass.png").string().c_str(), GL_CLAMP_TO_EDGE);
     unsigned int windowTexture = loadTexture(std::filesystem::absolute("assets/textures/blending_transparent_window.png").string().c_str(), GL_CLAMP_TO_EDGE);
 
+    // Frame Buffers
+    // unsigned int FBO;
+    // glGenFramebuffers(1, &FBO);
+    // glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+ 
+    // unsigned int fboTexture;
+    // glGenTextures(1, &fboTexture);
+    // glBindTexture(GL_TEXTURE_2D, fboTexture);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
+ 
+    // unsigned int fboDepthStencil;
+    // glGenTextures(1, &fboDepthStencil);
+    // glBindTexture(GL_TEXTURE_2D, fboDepthStencil);
+    // glTexImage2D(
+    //     GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, 800, 600, 0,
+    //     GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL
+    // );
+    // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, fboDepthStencil, 0);
+ 
+    // if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+    //     std::cout << "FRAMEBUFFER STATUS COMPLETE" << std::endl;
+ 
+    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // RenderBuffers are better for use cases that don't require SAMPLING from them
+    // unsigned int RBO;
+    // glGenRenderbuffers(1, &RBO);
+    // glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+    // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+
+    unsigned int framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    unsigned int texColorBuffer;
+    glGenTextures(1, &texColorBuffer);
+    glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    std::cout << glGetError() << std::endl;
+
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Framebuffer is not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Framebuffer Screen Quad
+    float fbQuadVertices[] = {
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f 
+    };
+    unsigned int fbQuadVAO, fbQuadVBO;
+    glGenVertexArrays(1, &fbQuadVAO);
+    glGenBuffers(1, &fbQuadVBO);
+    glBindVertexArray(fbQuadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, fbQuadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(fbQuadVertices), &fbQuadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glBindVertexArray(0);
+
     // shader configuration
     // --------------------
     shader.use();
@@ -233,6 +314,84 @@ int main()
     grassShader.setInt("texture1", 0);
     windowShader.use();
     windowShader.setInt("texture1", 0);
+    screenShader.use();
+    screenShader.setInt("screenTexture", 0);
+
+    auto RenderScene = [&] {
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		grassShader.use();
+		grassShader.setMat4("view", view);
+		grassShader.setMat4("projection", projection);
+		windowShader.use();
+		windowShader.setMat4("view", view);
+		windowShader.setMat4("projection", projection);
+		shaderSingleColor.use();
+		shaderSingleColor.setMat4("view", view);
+		shaderSingleColor.setMat4("projection", projection);
+		shader.use();
+		shader.setMat4("view", view);
+		shader.setMat4("projection", projection);
+
+		glStencilMask(0x00);
+		// floor
+		glCullFace(GL_FRONT);
+		glBindVertexArray(planeVAO);
+		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		shader.setMat4("model", glm::mat4(1.0f));
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
+		glCullFace(GL_BACK);
+
+		//first pass: Draw objects normally, writing to stencil buffer
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
+		// cubes
+		DrawTwoContainers(cubeVAO, cubeTexture, model, shader, 1.0f);
+
+		//second pass: Draw objects with singleColor shader, writing only when
+		//stencil mask is notequal
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x00);
+		glDisable(GL_DEPTH_TEST);
+		shaderSingleColor.use();
+		DrawTwoContainers(cubeVAO, cubeTexture, model, shaderSingleColor, 1.1f);
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);
+		glEnable(GL_DEPTH_TEST);
+
+		//Transparent meshes
+		glDisable(GL_CULL_FACE);
+		grassShader.use();
+		glBindVertexArray(transparentPlaneVAO);
+		glBindTexture(GL_TEXTURE_2D, grassTexture);
+		for (unsigned int i = 0; i < vegetation.size(); i++) {
+			model = glm::translate(glm::mat4(1.0f), vegetation[i]);
+			grassShader.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+
+		windowShader.use();
+		glBindVertexArray(transparentPlaneVAO);
+		glBindTexture(GL_TEXTURE_2D, windowTexture);
+
+		// depth sort windows
+		std::map<float, glm::vec3> sorted;
+		for (unsigned int i = 0; i < windows.size(); i++) {
+			float dist = glm::length(camera.Position - windows[i]);
+			sorted[dist] = windows[i];
+		}
+
+		for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
+			model = glm::translate(glm::mat4(1.0f), it->second);
+			shader.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+
+		glEnable(GL_CULL_FACE);
+		glBindVertexArray(0);
+    };
 
     // render loop
     // -----------
@@ -250,81 +409,26 @@ int main()
 
         // render
         // ------
+        glViewport(0, 0, 800, 600);
+        std::cout << "SCR_W: " << SCR_WIDTH << " SRC_H: " << SCR_HEIGHT << std::endl;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-        glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = camera.GetViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        grassShader.use();
-        grassShader.setMat4("view", view);
-        grassShader.setMat4("projection", projection);
-        windowShader.use();
-        windowShader.setMat4("view", view);
-        windowShader.setMat4("projection", projection);
-        shaderSingleColor.use();
-        shaderSingleColor.setMat4("view", view);
-        shaderSingleColor.setMat4("projection", projection);
-        shader.use();
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
-
-        glStencilMask(0x00);
-        // floor
-        glCullFace(GL_FRONT);
-        glBindVertexArray(planeVAO);
-        glBindTexture(GL_TEXTURE_2D, floorTexture);
-        shader.setMat4("model", glm::mat4(1.0f));
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glBindVertexArray(0);
-        glCullFace(GL_BACK);
-
-        //first pass: Draw objects normally, writing to stencil buffer
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);
-        glStencilMask(0xFF);
-        // cubes
-        DrawTwoContainers(cubeVAO, cubeTexture, model, shader, 1.0f);
-
-        //second pass: Draw objects with singleColor shader, writing only when
-        //stencil mask is notequal
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-        glStencilMask(0x00);
-        glDisable(GL_DEPTH_TEST);
-        shaderSingleColor.use();
-        DrawTwoContainers(cubeVAO, cubeTexture, model, shaderSingleColor, 1.1f);
-        glStencilMask(0xFF);
-        glStencilFunc(GL_ALWAYS, 0, 0xFF);
         glEnable(GL_DEPTH_TEST);
+        RenderScene();
 
-        //Transparent meshes
-        glDisable(GL_CULL_FACE);
-        grassShader.use();
-        glBindVertexArray(transparentPlaneVAO);
-        glBindTexture(GL_TEXTURE_2D, grassTexture);
-        for (unsigned int i = 0; i < vegetation.size(); i++) {
-            model = glm::translate(glm::mat4(1.0f), vegetation[i]);
-            grassShader.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
+        glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-        windowShader.use();
-        glBindVertexArray(transparentPlaneVAO);
-        glBindTexture(GL_TEXTURE_2D, windowTexture);
+        screenShader.use();
+        glBindVertexArray(fbQuadVAO);
+        glDisable(GL_DEPTH_TEST);
+        glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // depth sort windows
-        std::map<float, glm::vec3> sorted;
-        for (unsigned int i = 0; i < windows.size(); i++) {
-            float dist = glm::length(camera.Position - windows[i]);
-            sorted[dist] = windows[i];
-        }
-
-        for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
-            model = glm::translate(glm::mat4(1.0f), it->second);
-            shader.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
-
-        glEnable(GL_CULL_FACE);
         glBindVertexArray(0);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -332,13 +436,16 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-        std::cout << glGetError() << std::endl;
+        //std::cout << glGetError() << std::endl;
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
+    glDeleteFramebuffers(1, &framebuffer);
+    glDeleteVertexArrays(1, &fbQuadVAO);
     glDeleteVertexArrays(1, &cubeVAO);
     glDeleteVertexArrays(1, &planeVAO);
+    glDeleteBuffers(1, &fbQuadVBO);
     glDeleteBuffers(1, &cubeVBO);
     glDeleteBuffers(1, &planeVBO);
 
@@ -382,6 +489,8 @@ void processInput(GLFWwindow* window)
 // ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+    SCR_WIDTH  = width;
+    SCR_HEIGHT = height;
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);

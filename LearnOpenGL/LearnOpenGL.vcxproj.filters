@@ -45,5 +45,7 @@
     <None Include="shaders\stencil_buffer_singlecolor.frag" />
     <None Include="shaders\blending_cutout.frag" />
     <None Include="shaders\blending_alpha.frag" />
+    <None Include="shaders\framebuffer_quad.vert" />
+    <None Include="shaders\framebuffer_quad.frag" />
   </ItemGroup>
 </Project>
