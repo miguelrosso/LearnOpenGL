@@ -98,13 +98,16 @@ vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 viewDir)
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir) {
     vec3 lightDir = normalize(light.position - FragPos);
+    vec3 halfwayDir = normalize(lightDir + viewDir);
 
     //diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
 
     //specular shading
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    //vec3 reflectDir = reflect(-lightDir, normal);
+    //float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    //Blinn-Phong specular model
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 
     //attenuation
     float distance = length(light.position - FragPos);

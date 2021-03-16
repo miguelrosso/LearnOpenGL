@@ -18,7 +18,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
-unsigned int loadTexture(const char* path, int wrap = GL_REPEAT);
+unsigned int loadTexture(const char* path, int wrap = GL_REPEAT, bool sRGB = false);
 unsigned int loadCubemap(std::vector<std::string> faces, int filter = GL_LINEAR);
 void DrawTwoContainers(unsigned int cubeVAO, unsigned int cubeTexture, glm::mat4 model, Shader& shader, float scale = 1.0f);
 
@@ -89,6 +89,7 @@ int main()
     glEnable(GL_STENCIL_TEST);
     glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    //glEnable(GL_FRAMEBUFFER_SRGB);
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -103,7 +104,7 @@ int main()
     Shader windowShader("./shaders/depth_testing.vert", "./shaders/blending_alpha.frag");
     Shader screenShader("./shaders/framebuffer_quad.vert", "./shaders/framebuffer_quad.frag");
     Shader skyboxShader("./shaders/cubemap/cubemap.vert", "./shaders/cubemap/cubemap.frag");
-    Shader reflectiveShader("./shaders/cubemap/cubemap_reflection.vert", "./shaders/cubemap/cubemap_reflection.frag");
+    Shader reflectiveShader("./shaders/cubemap/cubemap_reflection.vert", "./shaders/cubemap/cubemap_refraction.frag");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -448,6 +449,7 @@ int main()
     windowShader.setInt("texture1", 0);
     screenShader.use();
     screenShader.setInt("screenTexture", 0);
+    screenShader.setFloat("gamma", 2.2f);
 
     auto RenderSkybox = [&] {
         glDepthMask(GL_FALSE);
@@ -570,12 +572,14 @@ int main()
         // render
         // ------
         glViewport(0, 0, FRAMEBUFFER_W, FRAMEBUFFER_H);
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         //glViewport(0, 0, 800, 600);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
         RenderScene();
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); 
 
         glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -719,7 +723,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
-unsigned int loadTexture(char const* path, int wrap)
+unsigned int loadTexture(char const* path, int wrap, bool sRGB)
 {
     unsigned int textureID;
     glGenTextures(1, &textureID);
@@ -732,9 +736,9 @@ unsigned int loadTexture(char const* path, int wrap)
         if (nrComponents == 1)
             format = GL_RED;
         else if (nrComponents == 3)
-            format = GL_RGB;
+            format = sRGB? GL_SRGB : GL_RGB;
         else if (nrComponents == 4)
-            format = GL_RGBA;
+            format = sRGB? GL_SRGB_ALPHA : GL_RGBA;
 
         glBindTexture(GL_TEXTURE_2D, textureID);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
